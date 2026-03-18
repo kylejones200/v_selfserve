@@ -1,7 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import {
   getAuth,
-  type Auth,
   GoogleAuthProvider,
   signInWithPopup,
   signOut as firebaseSignOut,
@@ -25,7 +24,7 @@ const firebaseConfig = hasConfig
   : null;
 
 const app = firebaseConfig ? initializeApp(firebaseConfig) : null;
-export const auth: Auth | null = app ? getAuth(app) : null;
+export const auth: ReturnType<typeof getAuth> | null = app ? getAuth(app) : null;
 
 export async function signInWithGoogle(): Promise<AuthUser> {
   if (!auth) {
