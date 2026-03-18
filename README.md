@@ -1,90 +1,78 @@
 # Skill Builder — v_selfserve
 
-A self-service web app where users describe their industry or company, define available data, and build skills (AI agents). **Sign-in required** (Google); the Claude API key stays on the server so only your signed-in users can use your tokens.
+A self-service web app where you describe your industry or company, define what data you have, and build **skills** — AI agents you can use in Cursor and other tools. You stay in control: your context and data drive the output, and only you (or people you allow) can use the app.
 
-## Run locally
+**Sign in with Google** to get started.
 
-1. **Set up Firebase (Google Sign-In)**  
-   - Go to [Firebase Console](https://console.firebase.google.com/), create a project (or use existing).  
-   - Enable **Authentication** → **Sign-in method** → **Google** (turn on, set support email, save).  
-   - In **Project settings** → **General** → **Your apps**, add a web app if needed, and copy the config (apiKey, authDomain, projectId).
+---
 
-2. **Configure env**  
-   Copy `.env.example` to `.env` and set:
-   - `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID` (from Firebase config).  
-   - `LLM_API_KEY` — your [Anthropic API key](https://console.anthropic.com/).  
-   - `FIREBASE_API_KEY` — same as `VITE_FIREBASE_API_KEY` (used by the server to verify tokens).
+## Who it’s for
 
-3. **Start the API server and the app** (two terminals):
+- **Teams** that want AI assistants tuned to their domain, data, and tools  
+- **Developers** who use Cursor and want skills that know about their codebase, APIs, and conventions  
+- **Anyone** who has structured data (APIs, docs, databases) and wants to turn that into reusable, shareable AI behaviors  
 
-   ```bash
-   npm install
-   npm run dev:server    # Terminal 1: API on http://localhost:3001
-   npm run dev           # Terminal 2: App on http://localhost:5173
-   ```
+You don’t need to write YAML or prompts from scratch. You describe your world; the app helps you turn that into a skill you can run where you work.
 
-   Open http://localhost:5173. You’ll see a sign-in screen; after signing in with Google, only you (or whoever you allow) can use the app and your Claude tokens.
+---
 
-## Code structure (separation of concerns)
+## How it works
 
-- **`src/domain/`** — Pure conversation logic: id generation, factory, title derivation, data-item factory. No I/O, no React.
-- **`src/api/`** — HTTP client for the skill backend (recommendations, generate skill). Auth token is passed in by the caller.
-- **`src/repositories/`** — Conversation persistence (localStorage). Single responsibility; no domain or API logic.
-- **`src/hooks/`** — Application orchestration: `useConversations` (list, current, persist, add/remove data) and `useSkillActions` (get recommendations, generate skill + loading). Use domain + repository + api; no UI.
-- **`src/contexts/`** — Auth state and methods (e.g. Firebase).
-- **`src/components/`** — Presentational UI; receive props and callbacks only.
-- **`App.tsx`** — Composition only: providers, auth gate, and layout that wires hooks to components.
+The app is built around three panels that work together:
 
-## Layout
+### 1. Context (left panel)
 
-- **Left nav:** Search + conversation history, **Sign out** and email at the bottom.  
-- **Panel 1:** “Tell me about your industry or company” — baseline context.  
-- **Panel 2:** What data is available; **Get recommendations** uses Claude.  
-- **Panel 3:** Generated skill; **Generate skill** uses Claude; **Download** / **Copy** for the result.
+**“Tell me about your industry or company.”**
 
-## Security
+Here you set the baseline: what you do, what your stack looks like, how your team works, or what your product is. This context is used whenever the app suggests data to include or generates a skill, so the result matches your reality instead of generic examples.
 
-- The **Claude API key** is only on the server (`server/index.js`). The browser never sees it.  
-- Every request to `/api/recommend-data` and `/api/generate-skill` must send a valid Firebase ID token (`Authorization: Bearer <token>`). The server verifies the token with Firebase before calling Claude.  
-- Only users who can sign in with Google (and any restrictions you add later) can use the app.
+- Keep it in plain language.  
+- You can mention tech stack, domain, internal tools, naming conventions, or processes.  
+- This text is saved with your conversation so you can refine it over time.
 
-## Persistence
+### 2. Data (middle panel)
 
-Conversations are stored in **localStorage** per browser. No backend is required for that.
+**What data or systems do you have?**
 
-## Build and production
+List the things an AI assistant could use: APIs, databases, docs, file layouts, environment variables, or other sources of truth. Each item can be a short label and a description (or a URL, path, or snippet).
 
-- **Build frontend:** `npm run build` → `dist/`.  
-- **Run API server:** set `PORT`, `LLM_API_KEY`, and `FIREBASE_API_KEY`, then `node server/index.js`.  
-- If the API is on another origin, set `VITE_API_URL` in `.env` (e.g. `https://api.yoursite.com`) so the frontend calls the right host.
+- **Get recommendations** — The app uses your context and what you’ve already listed to suggest more data items you might want to add.  
+- You can accept, edit, or ignore suggestions and keep building the list.  
+- The goal is a clear picture of “what the AI is allowed to know about” when you generate a skill.
 
-## Deploy to GitHub Pages
+### 3. Generated skill (right panel)
 
-**Yes, the app can run on GitHub Pages**, with one requirement: **the API server cannot run on GitHub Pages** (it only serves static files). So you deploy two parts:
+**Your skill, ready to use.**
 
-1. **Frontend (static)** → GitHub Pages  
-   - Build with `VITE_API_URL` set to your hosted API (see below).  
-   - For a **project site** (`https://<user>.github.io/<repo>/`), build with a base path:
-     ```bash
-     BASE_PATH=/v_selfserve/ npm run build
-     ```
-     (Use your repo name instead of `v_selfserve` if different.)  
-   - In the repo: **Settings → Pages → Source**: deploy from the branch that contains the built files (e.g. `gh-pages` with `dist/` at the root), or use the **Actions** tab with a workflow that runs `npm run build` and uploads `dist/`.
+Once your context and data are in place, **Generate skill** produces a full skill definition — the kind you can drop into Cursor (e.g. as a SKILL.md or rule) or reuse elsewhere. It’s tailored to your context and the data you defined.
 
-2. **API server** → host elsewhere  
-   - Deploy `server/index.js` to a Node host (e.g. [Render](https://render.com), [Railway](https://railway.app), [Fly.io](https://fly.io), or [Vercel](https://vercel.com) with a serverless function adapter).  
-   - Set `LLM_API_KEY` and `FIREBASE_API_KEY` in that host’s environment.  
-   - Enable CORS for your GitHub Pages origin (e.g. `https://<user>.github.io`).
+- **Download** — Save the skill as a file (e.g. for Cursor’s skills or rules).  
+- **Copy** — Paste it into an editor, doc, or another tool.  
+- You can regenerate after changing context or data to get an updated version.
 
-3. **Firebase**  
-   - In Firebase Console → **Authentication** → **Settings** → **Authorized domains**, add your GitHub Pages domain (e.g. `yourusername.github.io`).
+---
 
-Then when building the frontend for production, set:
+## What you get out of it
 
-```bash
-VITE_API_URL=https://your-api-host.example.com
-BASE_PATH=/your-repo-name/   # only for GitHub project pages
-npm run build
-```
+- **Skills that match your world** — Generated from your own context and data, not generic templates.  
+- **One place to iterate** — Change context or data, hit Generate again, and get a new skill without editing YAML by hand.  
+- **Reusable and shareable** — Download or copy the skill and use it in Cursor, docs, or with your team.  
+- **Privacy and control** — Sign-in is required; only authenticated users can use the app and generate skills. Your conversations and data stay in your session (and in your browser’s local storage for that device).
 
-After deploy, the site on GitHub Pages will load, sign-in will work, and “Get recommendations” / “Generate skill” will call your hosted API.
+---
+
+## Using the skill in Cursor
+
+The generated skill is written so you can use it with Cursor’s agent skills or rules:
+
+- Put the content in a **SKILL.md** (or similar) in your project or in Cursor’s skills directory.  
+- The skill describes when to use it, what it can do, and what data or APIs it can rely on — all based on what you defined in the app.  
+- Cursor can then suggest or use this skill when it’s relevant to the task.
+
+You can maintain multiple conversations in the app (e.g. one per project or team) and generate different skills for each.
+
+---
+
+## Summary
+
+**Skill Builder** helps you go from “here’s my company and my data” to “here’s a skill I can use in Cursor (or elsewhere)” without writing skill definitions from scratch. You set the context, define the data, and get a ready-to-use skill you can download, copy, and plug into your workflow.
