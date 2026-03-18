@@ -7,7 +7,14 @@ import {
   type ReactNode,
 } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth, signInWithGoogle as firebaseSignIn, signOut as firebaseSignOut, getIdToken } from '../lib/firebase';
+import {
+  auth,
+  signInWithGoogle as firebaseSignIn,
+  signInWithEmail as firebaseSignInWithEmail,
+  signUpWithEmail as firebaseSignUpWithEmail,
+  signOut as firebaseSignOut,
+  getIdToken,
+} from '../lib/firebase';
 import type { AuthUser } from '../types';
 
 interface AuthState {
@@ -15,6 +22,8 @@ interface AuthState {
   loading: boolean;
   getIdToken: (forceRefresh?: boolean) => Promise<string | null>;
   signInWithGoogle: () => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -40,6 +49,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await firebaseSignIn();
   }, []);
 
+  const signInWithEmail = useCallback(async (email: string, password: string) => {
+    await firebaseSignInWithEmail(email, password);
+  }, []);
+
+  const signUpWithEmail = useCallback(async (email: string, password: string) => {
+    await firebaseSignUpWithEmail(email, password);
+  }, []);
+
   const signOut = useCallback(async () => {
     await firebaseSignOut();
   }, []);
@@ -49,6 +66,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     getIdToken,
     signInWithGoogle,
+    signInWithEmail,
+    signUpWithEmail,
     signOut,
   };
 

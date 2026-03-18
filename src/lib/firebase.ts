@@ -3,6 +3,8 @@ import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
 } from 'firebase/auth';
 import type { AuthUser } from '../types';
@@ -26,12 +28,26 @@ const firebaseConfig = hasConfig
 const app = firebaseConfig ? initializeApp(firebaseConfig) : null;
 export const auth: ReturnType<typeof getAuth> | null = app ? getAuth(app) : null;
 
+function notConfigured(): never {
+  throw new Error('Sign-in is not configured for this site. Add Firebase config (VITE_FIREBASE_*) to the deployment.');
+}
+
 export async function signInWithGoogle(): Promise<AuthUser> {
-  if (!auth) {
-    throw new Error('Sign-in is not configured for this site. Add Firebase config (VITE_FIREBASE_*) to the deployment.');
-  }
+  if (!auth) notConfigured();
   const provider = new GoogleAuthProvider();
-  const result = await signInWithPopup(auth, provider);
+  const result = await signInWithPopup(auth!, provider);
+  return result.user as unknown as AuthUser;
+}
+
+export async function signInWithEmail(email: string, password: string): Promise<AuthUser> {
+  if (!auth) notConfigured();
+  const result = await signInWithEmailAndPassword(auth!, email, password);
+  return result.user as unknown as AuthUser;
+}
+
+export async function signUpWithEmail(email: string, password: string): Promise<AuthUser> {
+  if (!auth) notConfigured();
+  const result = await createUserWithEmailAndPassword(auth!, email, password);
   return result.user as unknown as AuthUser;
 }
 
