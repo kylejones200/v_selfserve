@@ -39,11 +39,8 @@ jobs:
           VITE_API_URL: ${{ vars.VITE_API_URL }}
           BASE_PATH: ${{ vars.BASE_PATH }}
         run: |
-          if [ -n "$BASE_PATH" ]; then
-            npm run build -- --base "$BASE_PATH"
-          else
-            npm run build
-          fi
+          BASE_PATH="${BASE_PATH:-/v_selfserve/}"
+          npm run build -- --base "$BASE_PATH"
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
