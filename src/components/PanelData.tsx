@@ -8,6 +8,7 @@ interface PanelDataProps {
   onGetRecommendations: () => void;
   loading?: boolean;
   disabled?: boolean;
+  error?: string | null;
 }
 
 export function PanelData({
@@ -17,6 +18,7 @@ export function PanelData({
   onGetRecommendations,
   loading,
   disabled,
+  error,
 }: PanelDataProps) {
   const [newLabel, setNewLabel] = useState('');
   const [newDesc, setNewDesc] = useState('');
@@ -46,6 +48,9 @@ export function PanelData({
         >
           {loading ? 'Getting recommendations…' : '✨ Get recommendations'}
         </button>
+        {error && (
+          <p className="mt-2 text-xs text-red-400" role="alert">{error}</p>
+        )}
       </div>
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
         <div className="shrink-0 p-3 border-b border-zinc-700/80 flex gap-2">

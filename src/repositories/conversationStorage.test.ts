@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   loadConversations,
   saveConversations,
@@ -42,6 +42,29 @@ describe('loadConversations', () => {
 });
 
 describe('saveConversations', () => {
+  it('throws clear error when storage quota exceeded', () => {
+    const mockSetItem = vi.fn(() => {
+      const err = new DOMException('Quota exceeded', 'QuotaExceededError');
+      throw err;
+    });
+    const orig = globalThis.localStorage;
+    (globalThis as unknown as { localStorage: typeof localStorage }).localStorage = {
+      ...orig,
+      setItem: mockSetItem,
+    } as Storage;
+    const c: Conversation = {
+      id: 'c1',
+      title: 'One',
+      createdAt: 1,
+      updatedAt: 1,
+      context: '',
+      dataItems: [],
+      skillContent: '',
+    };
+    expect(() => saveConversations([c])).toThrow('Storage limit reached');
+    (globalThis as unknown as { localStorage: typeof localStorage }).localStorage = orig;
+  });
+
   it('persists and loadConversations can read back', () => {
     const list: Conversation[] = [
       {

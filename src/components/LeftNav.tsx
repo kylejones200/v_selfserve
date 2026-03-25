@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import type { Conversation } from '../types';
 
 interface LeftNavProps {
+  /** Pre-filtered list (search applied in useConversations). */
   conversations: Conversation[];
   currentId: string | null;
   onSelect: (id: string) => void;
@@ -23,16 +24,6 @@ export function LeftNav({
   onSignOut,
 }: LeftNavProps) {
   const [searchFocused, setSearchFocused] = useState(false);
-
-  const filtered = useMemo(() => {
-    if (!searchQuery.trim()) return conversations;
-    const q = searchQuery.toLowerCase();
-    return conversations.filter(
-      (c) =>
-        c.title.toLowerCase().includes(q) ||
-        c.context.toLowerCase().includes(q)
-    );
-  }, [conversations, searchQuery]);
 
   return (
     <aside className="w-64 shrink-0 min-h-0 flex flex-col border-r border-zinc-700 bg-zinc-900/80 overflow-hidden">
@@ -66,13 +57,13 @@ export function LeftNav({
         <div className="text-xs font-medium text-zinc-500 uppercase tracking-wider px-2 py-1.5">
           History
         </div>
-        {filtered.length === 0 ? (
+        {conversations.length === 0 ? (
           <p className="text-zinc-500 text-sm px-2 py-4">
             {searchQuery ? 'No matches.' : 'No conversations yet.'}
           </p>
         ) : (
           <ul className="space-y-0.5">
-            {filtered.map((c) => (
+            {conversations.map((c) => (
               <li key={c.id}>
                 <button
                   type="button"

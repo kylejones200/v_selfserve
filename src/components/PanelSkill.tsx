@@ -5,6 +5,7 @@ interface PanelSkillProps {
   onGenerate: () => void;
   loading?: boolean;
   disabled?: boolean;
+  error?: string | null;
 }
 
 export function PanelSkill({
@@ -12,6 +13,7 @@ export function PanelSkill({
   onGenerate,
   loading,
   disabled,
+  error,
 }: PanelSkillProps) {
   const [copied, setCopied] = useState(false);
 
@@ -34,16 +36,17 @@ export function PanelSkill({
 
   return (
     <div className="h-full min-h-0 flex flex-col bg-zinc-900 overflow-hidden">
-      <div className="shrink-0 px-4 py-3 border-b border-zinc-700 flex items-center justify-between gap-2 flex-wrap">
-        <div>
-          <h2 className="text-sm font-semibold text-zinc-200">
-            Your skill
-          </h2>
-          <p className="text-xs text-zinc-500 mt-0.5">
-            Download or copy, then use it in your workflow
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+      <div className="shrink-0 px-4 py-3 border-b border-zinc-700 flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div>
+            <h2 className="text-sm font-semibold text-zinc-200">
+              Your skill
+            </h2>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              Download or copy, then use it in your workflow
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onGenerate}
@@ -68,7 +71,11 @@ export function PanelSkill({
           >
             {copied ? 'Copied!' : 'Copy'}
           </button>
+          </div>
         </div>
+        {error && (
+          <p className="text-xs text-red-400" role="alert">{error}</p>
+        )}
       </div>
       <div className="flex-1 min-h-0 p-4 overflow-hidden flex flex-col gap-3">
         {content && (

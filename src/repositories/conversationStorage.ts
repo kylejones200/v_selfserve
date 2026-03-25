@@ -19,7 +19,14 @@ export function loadConversations(): Conversation[] {
 }
 
 export function saveConversations(conversations: Conversation[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+      throw new Error('Storage limit reached. Try removing some conversations.');
+    }
+    throw e;
+  }
 }
 
 export function getConversation(id: string): Conversation | undefined {

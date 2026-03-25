@@ -1,17 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-
-function authErrorMessage(code: string): string {
-  const messages: Record<string, string> = {
-    'auth/invalid-email': 'Invalid email address.',
-    'auth/user-not-found': 'No account found with this email.',
-    'auth/wrong-password': 'Incorrect password.',
-    'auth/email-already-in-use': 'An account already exists with this email. Sign in instead.',
-    'auth/weak-password': 'Password should be at least 6 characters.',
-    'auth/invalid-credential': 'Invalid email or password.',
-  };
-  return messages[code] ?? 'Sign-in failed. Please try again.';
-}
+import { authErrorMessageForCode } from '../presentation/authErrorMessages';
 
 export function LoginScreen() {
   const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
@@ -49,7 +38,7 @@ export function LoginScreen() {
       }
     } catch (e: unknown) {
       const code = e && typeof e === 'object' && 'code' in e ? String((e as { code: string }).code) : '';
-      setError(authErrorMessage(code) || (e instanceof Error ? e.message : 'Sign in failed'));
+      setError(authErrorMessageForCode(code) || (e instanceof Error ? e.message : 'Sign in failed'));
     } finally {
       setBusy(false);
     }

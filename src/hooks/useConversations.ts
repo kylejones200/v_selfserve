@@ -1,15 +1,16 @@
 /**
- * Conversation list state: load, persist, select, and derive current.
- * Uses domain + repository only; no API or auth.
+ * Conversation UI state: React + persistence only.
+ * Domain rules live in domain/; I/O in repositories/.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Conversation } from '../types';
+import { createConversation, createDataItem, applyConversationPatch } from '../domain/conversation';
 import {
-  createConversation,
-  titleFromContext,
-  createDataItem,
-} from '../domain/conversation';
+  mergeConversationIntoList,
+  resolveCurrentConversation,
+  filterConversationsBySearch,
+} from '../domain/conversationList';
 import {
   loadConversations,
   saveConversation,
@@ -34,39 +35,37 @@ export function useConversations() {
 
   const [searchQuery, setSearchQuery] = useState('');
 
-  const current = getCurrentConversation(conversations, currentId);
+  const current = useMemo(
+    () =>
+      resolveCurrentConversation(conversations, currentId, (id) => getConversation(id)),
+    [conversations, currentId]
+  );
+
+  const visibleConversations = useMemo(
+    () => filterConversationsBySearch(conversations, searchQuery),
+    [conversations, searchQuery]
+  );
 
   useEffect(() => {
     if (currentId === null && conversations.length > 0) {
-      setCurrentId(conversations[0].id);
+      queueMicrotask(() => setCurrentId(conversations[0].id));
     }
-  }, [currentId, conversations.length]);
+  }, [currentId, conversations]);
 
   useEffect(() => {
     if (currentId && !conversations.some((c) => c.id === currentId)) {
       const loaded = getConversation(currentId);
-      if (loaded) setConversations((prev) => [loaded, ...prev]);
+      if (loaded) {
+        queueMicrotask(() => setConversations((prev) => [loaded, ...prev]));
+      }
     }
   }, [currentId, conversations]);
 
   const persist = useCallback(
     (updates: Partial<Conversation>) => {
-      const next: Conversation = {
-        ...current,
-        ...updates,
-        updatedAt: Date.now(),
-      };
-      if (updates.context !== undefined) {
-        next.title = titleFromContext(next.context);
-      }
+      const next = applyConversationPatch(current, updates);
       saveConversation(next);
-      setConversations((prev) => {
-        const idx = prev.findIndex((c) => c.id === next.id);
-        const list = idx >= 0 ? [...prev] : [next, ...prev];
-        if (idx >= 0) list[idx] = next;
-        else list[0] = next;
-        return list;
-      });
+      setConversations((prev) => mergeConversationIntoList(prev, next));
     },
     [current]
   );
@@ -102,6 +101,7 @@ export function useConversations() {
 
   return {
     conversations,
+    visibleConversations,
     currentId,
     current,
     searchQuery,
@@ -112,17 +112,4 @@ export function useConversations() {
     addDataItem,
     removeDataItem,
   };
-}
-
-function getCurrentConversation(
-  list: Conversation[],
-  id: string | null
-): Conversation {
-  if (id) {
-    const found = list.find((c) => c.id === id);
-    if (found) return found;
-    const loaded = getConversation(id);
-    if (loaded) return loaded;
-  }
-  return createConversation();
 }

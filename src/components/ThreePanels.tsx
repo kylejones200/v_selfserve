@@ -14,6 +14,8 @@ interface ThreePanelsProps {
   onGenerateSkill: () => void;
   dataLoading?: boolean;
   skillLoading?: boolean;
+  dataError?: string | null;
+  skillError?: string | null;
 }
 
 export function ThreePanels({
@@ -27,6 +29,8 @@ export function ThreePanels({
   onGenerateSkill,
   dataLoading,
   skillLoading,
+  dataError,
+  skillError,
 }: ThreePanelsProps) {
   return (
     <main className="flex-1 flex min-w-0 min-h-0 overflow-hidden">
@@ -38,11 +42,13 @@ export function ThreePanels({
           onRemove={onRemoveData}
           onGetRecommendations={onGetRecommendations}
           loading={dataLoading}
+          error={dataError}
         />
         <PanelSkill
           content={skillContent}
           onGenerate={onGenerateSkill}
           loading={skillLoading}
+          error={skillError}
         />
       </div>
     </main>

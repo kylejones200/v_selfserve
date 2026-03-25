@@ -9,6 +9,7 @@ import { useSkillActions } from './hooks/useSkillActions';
 import { LeftNav } from './components/LeftNav';
 import { ThreePanels } from './components/ThreePanels';
 import { LoginScreen } from './components/LoginScreen';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 function AppContent() {
   const auth = useAuth();
@@ -22,7 +23,7 @@ function AppContent() {
   return (
     <div className="flex h-screen overflow-hidden">
       <LeftNav
-        conversations={conversations.conversations}
+        conversations={conversations.visibleConversations}
         currentId={conversations.currentId}
         onSelect={conversations.selectConversation}
         onNew={conversations.newConversation}
@@ -42,6 +43,8 @@ function AppContent() {
         onGenerateSkill={skillActions.generateSkillContent}
         dataLoading={skillActions.dataLoading}
         skillLoading={skillActions.skillLoading}
+        dataError={skillActions.dataError}
+        skillError={skillActions.skillError}
       />
     </div>
   );
@@ -67,8 +70,10 @@ function AppWithAuth() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppWithAuth />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppWithAuth />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

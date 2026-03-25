@@ -5,6 +5,8 @@ import {
   createConversation,
   titleFromContext,
   createDataItem,
+  mergeRecommendedDataItems,
+  applyConversationPatch,
 } from './conversation';
 
 describe('newConversationId', () => {
@@ -68,5 +70,43 @@ describe('createDataItem', () => {
     expect(d.description).toBe('Postgres');
     expect(d.recommended).toBe(true);
     expect(d.source).toBe('recommendation');
+  });
+});
+
+describe('mergeRecommendedDataItems', () => {
+  it('adds new labels and skips duplicates', () => {
+    const existing = [createDataItem('API')];
+    const { dataItems, changed } = mergeRecommendedDataItems(existing, [
+      { label: 'API', description: 'dup' },
+      { label: 'DB', description: 'new' },
+    ]);
+    expect(changed).toBe(true);
+    expect(dataItems).toHaveLength(2);
+    expect(dataItems[1].label).toBe('DB');
+  });
+
+  it('returns changed false when nothing new', () => {
+    const existing = [createDataItem('API')];
+    const { dataItems, changed } = mergeRecommendedDataItems(existing, [
+      { label: 'api', description: 'case dup' },
+    ]);
+    expect(changed).toBe(false);
+    expect(dataItems).toHaveLength(1);
+  });
+});
+
+describe('applyConversationPatch', () => {
+  const base = createConversation({ id: 'c1', context: 'Old', title: 'Old' });
+
+  it('merges updates and bumps updatedAt', () => {
+    const next = applyConversationPatch(base, { skillContent: 'x' }, 99);
+    expect(next.skillContent).toBe('x');
+    expect(next.updatedAt).toBe(99);
+    expect(next.context).toBe('Old');
+  });
+
+  it('recomputes title when context changes', () => {
+    const next = applyConversationPatch(base, { context: 'New title line\nmore' }, 100);
+    expect(next.title).toBe('New title line');
   });
 });

@@ -44,3 +44,36 @@ export function createDataItem(
     source: options?.source ?? 'user',
   };
 }
+
+/** Merge API recommendations into existing items; dedupe by label (case-insensitive). */
+export function mergeRecommendedDataItems(
+  existing: readonly DataItem[],
+  recommended: readonly { label: string; description?: string }[]
+): { dataItems: DataItem[]; changed: boolean } {
+  const labels = new Set(existing.map((d) => d.label.toLowerCase()));
+  const toAdd = recommended.filter((r) => !labels.has(r.label.toLowerCase()));
+  const newItems = toAdd.map((r) =>
+    createDataItem(r.label, {
+      description: r.description,
+      recommended: true,
+      source: 'recommendation',
+    })
+  );
+  if (newItems.length === 0) {
+    return { dataItems: [...existing], changed: false };
+  }
+  return { dataItems: [...existing, ...newItems], changed: true };
+}
+
+/** Apply partial updates to a conversation; updates title when context changes. */
+export function applyConversationPatch(
+  current: Conversation,
+  updates: Partial<Conversation>,
+  now: number = Date.now()
+): Conversation {
+  const next: Conversation = { ...current, ...updates, updatedAt: now };
+  if (updates.context !== undefined) {
+    next.title = titleFromContext(next.context);
+  }
+  return next;
+}

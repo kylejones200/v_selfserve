@@ -41,7 +41,8 @@ async function post(path: string, body: unknown, getToken: GetIdToken): Promise<
 function parseError(res: Response, fallback: string): Promise<never> {
   return res.json().then((data: { error?: string }) => {
     throw new Error(data?.error ?? fallback);
-  }).catch(() => {
+  }).catch((err) => {
+    if (err instanceof Error && err.message !== fallback) throw err;
     throw new Error(fallback);
   });
 }

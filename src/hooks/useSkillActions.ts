@@ -1,14 +1,16 @@
 /**
- * Skill actions: get recommendations and generate skill via API.
- * Owns loading state; uses api + getIdToken. Orchestrates with current conversation and persist.
+ * Skill actions: React state only. Delegates I/O + rules to application/skillWorkflow.
  */
 
 import { useState, useCallback } from 'react';
-import type { Conversation, DataItem } from '../types';
-import { recommendData, generateSkill } from '../api/skillApi';
-import { createDataItem } from '../domain/conversation';
+import type { Conversation } from '../types';
+import {
+  fetchRecommendationsMergedIntoConversation,
+  fetchGeneratedSkillMarkdown,
+  type GetIdToken,
+} from '../application/skillWorkflow';
 
-export type GetIdToken = () => Promise<string | null>;
+export type { GetIdToken };
 
 export function useSkillActions(
   current: Conversation,
@@ -17,58 +19,44 @@ export function useSkillActions(
 ) {
   const [dataLoading, setDataLoading] = useState(false);
   const [skillLoading, setSkillLoading] = useState(false);
+  const [dataError, setDataError] = useState<string | null>(null);
+  const [skillError, setSkillError] = useState<string | null>(null);
 
   const getRecommendations = useCallback(async () => {
     setDataLoading(true);
+    setDataError(null);
     try {
-      const result = await recommendData(
-        { industryContext: current.context },
+      const { dataItems, changed } = await fetchRecommendationsMergedIntoConversation(
+        current,
         getIdToken
       );
-      const existingLabels = new Set(
-        current.dataItems.map((d) => d.label.toLowerCase())
-      );
-      const toAdd = result.recommended.filter(
-        (r) => !existingLabels.has(r.label.toLowerCase())
-      );
-      const newItems: DataItem[] = toAdd.map((r) =>
-        createDataItem(r.label, {
-          description: r.description,
-          recommended: true,
-          source: 'recommendation',
-        })
-      );
-      if (newItems.length > 0) {
-        persist({ dataItems: [...current.dataItems, ...newItems] });
-      }
+      if (changed) persist({ dataItems });
+    } catch (e) {
+      setDataError(e instanceof Error ? e.message : 'Failed to get recommendations');
     } finally {
       setDataLoading(false);
     }
-  }, [current.context, current.dataItems, persist, getIdToken]);
+  }, [current, persist, getIdToken]);
 
   const generateSkillContent = useCallback(async () => {
     setSkillLoading(true);
+    setSkillError(null);
     try {
-      const result = await generateSkill(
-        {
-          industryContext: current.context,
-          dataItems: current.dataItems.map((d) => ({
-            label: d.label,
-            description: d.description,
-          })),
-        },
-        getIdToken
-      );
-      persist({ skillContent: result.content });
+      const content = await fetchGeneratedSkillMarkdown(current, getIdToken);
+      persist({ skillContent: content });
+    } catch (e) {
+      setSkillError(e instanceof Error ? e.message : 'Failed to generate skill');
     } finally {
       setSkillLoading(false);
     }
-  }, [current.context, current.dataItems, persist, getIdToken]);
+  }, [current, persist, getIdToken]);
 
   return {
     getRecommendations,
     generateSkillContent,
     dataLoading,
     skillLoading,
+    dataError,
+    skillError,
   };
 }
